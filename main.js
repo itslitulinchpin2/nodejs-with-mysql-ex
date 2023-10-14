@@ -51,15 +51,19 @@ var app = http.createServer(function(request,response){
           }
           
           //아이디에 맞는 데이터를 가져오는 sql문이 필요하다.
-          db.query(`SELECT * FROM topic WHERE id=?`, [queryData.id], function(error2, topic){
+          db.query(`SELECT * FROM topic LEFT JOIN author ON topic.author_id=author.id WHERE topic.id=?`, [queryData.id], function(error2, topic){
             if (error2){
               throw error2;
             }
+            // console.log("원하는 결과: ", topic)
             var title = topic[0].title;
             var description = topic[0].description;
             var list = template.list(topics);
             var html = template.HTML(title, list,
-              `<h2>${title}</h2>${description}`,
+              `
+              <h2>${title}</h2>
+              ${description}
+              <p>by ${topic[0].name}</p>`,
               `<a href="/create">create</a>
                  <a href="/update?id=${queryData.id}">update</a>
                  <form action="delete_process" method="post">
@@ -77,16 +81,19 @@ var app = http.createServer(function(request,response){
     } else if(pathname === '/create'){
       
       db.query(`SELECT * FROM TOPIC`, function(error, topics){
+        db.query(`SELECT * FROM author`, function(error2,authors){
+          console.log(authors);
           
-        //쿼리문의 결과값이 topics에 담긴다.
-
-        var title = 'Create';
-        var list = template.list(topics);
-        var html = template.HTML(title, list,
+          var title = 'Create';
+          var list = template.list(topics);
+          var html = template.HTML(title, list,
          `<form action="/create_process" method="post">
              <p><input type="text" name="title" placeholder="title"></p>
              <p>
                <textarea name="description" placeholder="description"></textarea>
+             </p>
+             <p>
+              ${template.authorSelect(authors)}
              </p>
              <p>
                <input type="submit">
@@ -96,6 +103,10 @@ var app = http.createServer(function(request,response){
         response.writeHead(200);
         response.end(html);
 
+        })
+        //쿼리문의 결과값이 topics에 담긴다.
+
+        
       })
 
     } else if(pathname === '/create_process'){
@@ -108,7 +119,7 @@ var app = http.createServer(function(request,response){
           
           db.query(`
           INSERT INTO topic(title,description,created,author_id) 
-          VALUES(?,?, NOW(),?)`,[post.title,post.description,1],
+          VALUES(?,?, NOW(),?)`,[post.title,post.description,post.author],
           function(error,results){
             if(error){
               throw error;
@@ -125,12 +136,14 @@ var app = http.createServer(function(request,response){
         if(error){
           throw error;
         } 
-        console.log("첫번째 토픽: ", topics)
+       
+        
         db.query(`SELECT * FROM topic WHERE id=?`,[queryData.id], function(error2, topic){
           if (error2){
             throw error2;
           }
-          console.log("두번째 토픽: ", topic)
+          db.query(`SELECT * FROM author`, function(error3,authors){
+          
         var list = template.list(topics);
         var html = template.HTML(topic[0].title, list,
             `
@@ -139,6 +152,9 @@ var app = http.createServer(function(request,response){
                 <p><input type="text" name="title" placeholder="title" value="${topic[0].title}"></p>
                 <p>
                   <textarea name="description" placeholder="description">${topic[0].description}</textarea>
+                </p>
+                <p>
+                ${template.authorSelect(authors,topic[0].author_id)}
                 </p>
                 <p>
                   <input type="submit">
@@ -150,7 +166,7 @@ var app = http.createServer(function(request,response){
         )
         response.writeHead(200);
         response.end(html);
-
+        });
       });
     });
 
@@ -165,8 +181,8 @@ var app = http.createServer(function(request,response){
           var id = post.id;
   
           db.query(`
-          UPDATE topic SET title=?, description=?, author_id=1 WHERE id=?`,
-          [post.title,post.description,post.id],
+          UPDATE topic SET title=?, description=?, author_id=? WHERE id=?`,
+          [post.title,post.description,post.author,post.id],
           
           function(error,results){
             if(error){
