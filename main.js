@@ -28,9 +28,13 @@ var app = http.createServer(function(request,response){
       topic.delete_process(request,response)
     } else if (pathname==='/author'){
       author.home(request,response);
-    } else if (pathname==='/create_author_process'){
+    } else if (pathname==='/author/create_process'){
       author.create_author_process(request,response);
-    } else {
+    } else if (pathname==='/author/update'){
+      author.update(request,response);
+  } else if (pathname==='/author/update_process'){
+      author.update_author_process(request,response);
+  } else {
       response.writeHead(404);
       response.end('Not found');
     }
