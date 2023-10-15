@@ -34,6 +34,8 @@ var app = http.createServer(function(request,response){
       author.update(request,response);
   } else if (pathname==='/author/update_process'){
       author.update_author_process(request,response);
+  } else if (pathname==='/author/delete_process'){
+    author.delete(request,response)
   } else {
       response.writeHead(404);
       response.end('Not found');
